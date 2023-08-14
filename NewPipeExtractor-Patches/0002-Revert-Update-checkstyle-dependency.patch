@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Mon, 14 Aug 2023 23:48:09 +0800
+Subject: [PATCH] Revert "Update checkstyle dependency."
+
+This reverts commit 7874d3c8aa8001bfcb78a55fa8669df8fc6958e8
+
+diff --git a/build.gradle b/build.gradle
+index 0c75323d96d4ec5f490a4b8efef780c7eb056935..0dec2e59f0f166e5335f9e7fa47d040e75496f75 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -30,7 +30,7 @@ allprojects {
+         nanojsonVersion = "1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751"
+         spotbugsVersion = "4.7.3"
+         junitVersion = "5.9.3"
+-        checkstyleVersion = "10.4"
++        checkstyleVersion = "9.3" // do not use latest version (10.0) as it requires compile JDK 11
+     }
+ }
+ 

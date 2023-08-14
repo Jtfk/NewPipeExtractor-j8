@@ -1,0 +1,555 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Tue, 15 Aug 2023 00:01:33 +0800
+Subject: [PATCH] Revert "Use StandardCharsets.UTF_8."
+
+Allow for old android version without updating AGP.
+Based on https://github.com/SkyTubeTeam/NewPipeExtractor/commit/a473ed1be85c47962688a17a596fb30a9918b23d
+
+This partially reverts commit 366f5c1632c38a2dc376dd472ba81f554eba51b8
+
+diff --git a/README.md b/README.md
+index 15bf169c33d0d40651a41e65f9caf502f83fe100..0e52c4265ba0eac48afaeb69563731cade434b8d 100644
+--- a/README.md
++++ b/README.md
+@@ -21,7 +21,7 @@ If you're using Gradle, you could add NewPipe Extractor as a dependency with the
+ -dontwarn org.mozilla.javascript.tools.**
+ ```
+ 
+-**Note:** To use NewPipe Extractor in Android projects with a `minSdk` below 26, [API desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required. If the `minSdk` is below 19, the `desugar_jdk_libs_nio` artifact is required, which requires Android Gradle Plugin (AGP) version 7.4.0.
++**Note:** To use NewPipe Extractor in projects with a `minSdk` below 26, [API desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required. ~~If the `minSdk` is below 19, the `desugar_jdk_libs_nio` artifact is required, which requires Android Gradle Plugin (AGP) version 7.4.0~~.
+ 
+ ### Testing changes
+ 
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java
+index 5d38ea87dedf0df26d256fd5fc6c4d7470fe8cdb..ef589dc66b038a6d1c3cccf70cb5227363b58a4a 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java
+@@ -1,6 +1,7 @@
+ package org.schabi.newpipe.extractor.services.bandcamp.extractors;
+ 
+ import static org.schabi.newpipe.extractor.services.bandcamp.extractors.BandcampExtractorHelper.BASE_API_URL;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import com.grack.nanojson.JsonArray;
+ import com.grack.nanojson.JsonObject;
+@@ -21,7 +22,6 @@ import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
+ import org.schabi.newpipe.extractor.utils.JsonUtils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.Collections;
+ import java.util.List;
+ 
+@@ -107,7 +107,7 @@ public class BandcampCommentsExtractor extends CommentsExtractor {
+                             .value("token", token)
+                             .value("count", 7)
+                             .array("exclude_fan_ids").end()
+-                            .end().done().getBytes(StandardCharsets.UTF_8)).responseBody());
++                            .end().done().getBytes(UTF_8)).responseBody());
+         } catch (final IOException | ReCaptchaException e) {
+             throw new ParsingException("Could not fetch reviews", e);
+         }
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampExtractorHelper.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampExtractorHelper.java
+index aff866053426c5c4a30b4a56ca2853e919fc7e15..66a09bbf6f601235d70f7bf183331041cddad4ab 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampExtractorHelper.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampExtractorHelper.java
+@@ -16,7 +16,6 @@ import org.schabi.newpipe.extractor.utils.Utils;
+ 
+ import javax.annotation.Nullable;
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.time.DateTimeException;
+ import java.time.ZonedDateTime;
+ import java.time.format.DateTimeFormatter;
+@@ -69,7 +68,7 @@ public final class BandcampExtractorHelper {
+                             .value("band_id", id)
+                             .end()
+                             .done()
+-                            .getBytes(StandardCharsets.UTF_8)).responseBody());
++                            .getBytes(Utils.UTF_8)).responseBody());
+         } catch (final IOException | ReCaptchaException | JsonParserException e) {
+             throw new ParsingException("Could not download band details", e);
+         }
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampFeaturedExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampFeaturedExtractor.java
+index cf179619701a6e297f4bdaa9c8cb6d3bdddf1b92..19f605ce61c03c9e284fc944dc85061baebd654e 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampFeaturedExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampFeaturedExtractor.java
+@@ -18,10 +18,10 @@ import org.schabi.newpipe.extractor.playlist.PlaylistInfoItemsCollector;
+ 
+ import javax.annotation.Nonnull;
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.Collections;
+ 
+ import static org.schabi.newpipe.extractor.services.bandcamp.extractors.BandcampExtractorHelper.BASE_API_URL;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ public class BandcampFeaturedExtractor extends KioskExtractor<PlaylistInfoItem> {
+ 
+@@ -45,7 +45,7 @@ public class BandcampFeaturedExtractor extends KioskExtractor<PlaylistInfoItem>
+             json = JsonParser.object().from(getDownloader().postWithContentTypeJson(
+                             FEATURED_API_URL,
+                             Collections.emptyMap(),
+-                            "{\"platform\":\"\",\"version\":0}".getBytes(StandardCharsets.UTF_8))
++                            "{\"platform\":\"\",\"version\":0}".getBytes(UTF_8))
+                     .responseBody());
+         } catch (final JsonParserException e) {
+             throw new ParsingException("Could not parse Bandcamp featured API response", e);
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsExtractor.java
+index d7c523bcf390355d5a66340ba15ec2ec50787058..b5fe0281b0a3ad834423b6dffdbac6d9ceb4b7b1 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsExtractor.java
+@@ -18,7 +18,6 @@ import org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper;
+ import org.schabi.newpipe.extractor.utils.Utils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ 
+ import static org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper.COUNT_KEY;
+ import static org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper.ITEMS_PER_PAGE;
+@@ -130,7 +129,7 @@ public class PeertubeCommentsExtractor extends CommentsExtractor {
+             }
+         } else {
+             try {
+-                json = JsonParser.object().from(new String(page.getBody(), StandardCharsets.UTF_8));
++                json = JsonParser.object().from(new String(page.getBody(), Utils.UTF_8));
+                 isReply = true;
+                 total = json.getArray(CHILDREN).size();
+                 collectRepliesFrom(collector, json);
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java
+index 7bbaef2570410448f29f897ea3c5896a639a3258..2cc07d2fea18fb5fd9c52471863bd42e2caaf0d7 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java
+@@ -17,10 +17,11 @@ import org.schabi.newpipe.extractor.utils.JsonUtils;
+ 
+ import javax.annotation.Nonnull;
+ import javax.annotation.Nullable;
+-import java.nio.charset.StandardCharsets;
++import java.io.UnsupportedEncodingException;
+ import java.util.Objects;
+ 
+ import static org.schabi.newpipe.extractor.services.peertube.extractors.PeertubeCommentsExtractor.CHILDREN;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtractor {
+     @Nonnull
+@@ -136,8 +137,12 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
+             // is also structured like a JsonObject.
+             final JsonObject pageContent = new JsonObject();
+             pageContent.put(CHILDREN, children);
+-            return new Page(repliesUrl, threadId,
+-                     JsonWriter.string(pageContent).getBytes(StandardCharsets.UTF_8));
++            try {
++                return new Page(repliesUrl, threadId,
++                         JsonWriter.string(pageContent).getBytes(UTF_8));
++            } catch (final UnsupportedEncodingException e) {
++                throw new ParsingException("no utf8", e);
++            }
+         }
+         return new Page(repliesUrl, threadId);
+     }
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java
+index 3e69dae520d7d22eefce0b6047562559ed970ae0..d72b24964d2cc6be62e20b29353769ebcd7d375e 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java
+@@ -54,7 +54,6 @@ import java.io.IOException;
+ import java.io.UnsupportedEncodingException;
+ import java.net.MalformedURLException;
+ import java.net.URL;
+-import java.nio.charset.StandardCharsets;
+ import java.security.SecureRandom;
+ import java.time.LocalDate;
+ import java.time.OffsetDateTime;
+@@ -560,7 +559,7 @@ public final class YoutubeParsingHelper {
+                 .end()
+                 .value("fetchLiveState", true)
+                 .end()
+-            .end().done().getBytes(StandardCharsets.UTF_8);
++            .end().done().getBytes(Utils.UTF_8);
+         // @formatter:on
+ 
+         final Map<String, List<String>> headers = getClientHeaders("1", HARDCODED_CLIENT_VERSION);
+@@ -801,7 +800,7 @@ public final class YoutubeParsingHelper {
+                     .end()
+                 .end()
+                 .value("input", "")
+-            .end().done().getBytes(StandardCharsets.UTF_8);
++            .end().done().getBytes(Utils.UTF_8);
+         // @formatter:on
+ 
+         final Map<String, List<String>> headers = new HashMap<>(getOriginReferrerHeaders(YOUTUBE_MUSIC_URL));
+@@ -1385,7 +1384,7 @@ public final class YoutubeParsingHelper {
+                 .value(CONTENT_CHECK_OK, true)
+                 .value(RACY_CHECK_OK, true)
+                 .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+         // @formatter:on
+     }
+ 
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java
+index f042fde27e0ad316beee83c17c6644beaaca46d2..52811815a9c62c17a75cf7c5706a1b8c2acab98a 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java
+@@ -8,6 +8,7 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isTvHtml5SimplyEmbeddedPlayerStreamingUrl;
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isWebStreamingUrl;
+ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import org.schabi.newpipe.extractor.MediaFormat;
+ import org.schabi.newpipe.extractor.NewPipe;
+@@ -25,7 +26,6 @@ import org.w3c.dom.Element;
+ 
+ import java.io.IOException;
+ import java.io.StringWriter;
+-import java.nio.charset.StandardCharsets;
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
+@@ -623,7 +623,7 @@ public final class YoutubeDashManifestCreatorsUtils {
+                 final Map<String, List<String>> headers = java.util.Collections.singletonMap(
+                         "User-Agent", java.util.Collections.singletonList(isAndroidStreamingUrl
+                                 ? getAndroidUserAgent(null) : getIosUserAgent(null)));
+-                final byte[] emptyBody = "".getBytes(StandardCharsets.UTF_8);
++                final byte[] emptyBody = "".getBytes(UTF_8);
+                 return downloader.post(baseStreamingUrl, headers, emptyBody);
+             } catch (final IOException | ExtractionException e) {
+                 throw new CreationException("Could not get the "
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java
+index 0b599f3c550eb91edfbafa04022ff27996fdceca..27945c08d7fbd8e75e10c72afd4737d94c3d03d7 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java
+@@ -7,6 +7,7 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getTextFromObject;
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
+ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import com.grack.nanojson.JsonArray;
+ import com.grack.nanojson.JsonObject;
+@@ -29,7 +30,6 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItemsCollector;
+ import org.schabi.newpipe.extractor.utils.Utils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Objects;
+@@ -95,7 +95,7 @@ public class YoutubeChannelExtractor extends ChannelExtractor {
+                             getExtractorLocalization(), getExtractorContentCountry())
+                             .value("url", "https://www.youtube.com/" + channelPath)
+                             .done())
+-                    .getBytes(StandardCharsets.UTF_8);
++                    .getBytes(UTF_8);
+ 
+             final JsonObject jsonResponse = getJsonPostResponse("navigation/resolve_url",
+                     body, getExtractorLocalization());
+@@ -133,7 +133,7 @@ public class YoutubeChannelExtractor extends ChannelExtractor {
+                             .value("browseId", id)
+                             .value("params", "EgZ2aWRlb3M%3D") // Equal to videos
+                             .done())
+-                    .getBytes(StandardCharsets.UTF_8);
++                    .getBytes(UTF_8);
+ 
+             final JsonObject jsonResponse = getJsonPostResponse("browse", body,
+                     getExtractorLocalization());
+@@ -429,7 +429,7 @@ public class YoutubeChannelExtractor extends ChannelExtractor {
+                         getExtractorContentCountry())
+                         .value("continuation", continuation)
+                         .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(UTF_8);
+ 
+         return new Page(YOUTUBEI_V1_URL + "browse?key=" + getKey()
+                 + DISABLE_PRETTY_PRINT_PARAMETER, null, channelIds, null, body);
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeCommentsExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeCommentsExtractor.java
+index 84e6c3e1e110c4dae3d089f725b270512e61a6f7..4b6f32c6fdf25749459321de51297ec5d6a5b2bc 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeCommentsExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeCommentsExtractor.java
+@@ -19,7 +19,6 @@ import org.schabi.newpipe.extractor.utils.Utils;
+ import javax.annotation.Nonnull;
+ import javax.annotation.Nullable;
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.Collections;
+ import java.util.List;
+ 
+@@ -191,7 +190,7 @@ public class YoutubeCommentsExtractor extends CommentsExtractor {
+                 prepareDesktopJsonBuilder(localization, getExtractorContentCountry())
+                     .value("continuation", page.getId())
+                     .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+         // @formatter:on
+ 
+         final JsonObject jsonObject = getJsonPostResponse("next", body, localization);
+@@ -272,7 +271,7 @@ public class YoutubeCommentsExtractor extends CommentsExtractor {
+                 prepareDesktopJsonBuilder(localization, getExtractorContentCountry())
+                     .value("videoId", getId())
+                     .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+         // @formatter:on
+ 
+         final String initialToken =
+@@ -287,7 +286,7 @@ public class YoutubeCommentsExtractor extends CommentsExtractor {
+                         prepareDesktopJsonBuilder(localization, getExtractorContentCountry())
+                                 .value("continuation", initialToken)
+                                 .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+         // @formatter:on
+ 
+         ajaxJson = getJsonPostResponse("next", ajaxBody, localization);
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java
+index c2819eb0c3f2de34be50d70d505b5f71ce1e9e13..cd2ea71305e1f843945c44c493e892af931bceea 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java
+@@ -11,6 +11,7 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
+ import static org.schabi.newpipe.extractor.utils.Utils.getQueryValue;
+ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
+ import static org.schabi.newpipe.extractor.utils.Utils.stringToURL;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import com.grack.nanojson.JsonArray;
+ import com.grack.nanojson.JsonBuilder;
+@@ -38,7 +39,6 @@ import org.schabi.newpipe.extractor.utils.JsonUtils;
+ 
+ import java.io.IOException;
+ import java.net.URL;
+-import java.nio.charset.StandardCharsets;
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+@@ -87,7 +87,7 @@ public class YoutubeMixPlaylistExtractor extends PlaylistExtractor {
+             jsonBody.value("playlistIndex", Integer.parseInt(playlistIndexString));
+         }
+ 
+-        final byte[] body = JsonWriter.string(jsonBody.done()).getBytes(StandardCharsets.UTF_8);
++        final byte[] body = JsonWriter.string(jsonBody.done()).getBytes(UTF_8);
+ 
+         // Cookie is required due to consent
+         final Map<String, List<String>> headers = getYouTubeHeaders();
+@@ -212,7 +212,7 @@ public class YoutubeMixPlaylistExtractor extends PlaylistExtractor {
+                 .value("playlistIndex", index)
+                 .value("params", params)
+                 .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(UTF_8);
+ 
+         return new Page(YOUTUBEI_V1_URL + "next?key=" + getKey(), null, null, cookies, body);
+     }
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMusicSearchExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMusicSearchExtractor.java
+index ae6b10a652af22cdeafd815561271fd1e719597a..2a4329d0026a5f140ccf0cb6231ee28354b14c05 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMusicSearchExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMusicSearchExtractor.java
+@@ -12,6 +12,7 @@ import static org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeS
+ import static org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory.MUSIC_SONGS;
+ import static org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory.MUSIC_VIDEOS;
+ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import com.grack.nanojson.JsonArray;
+ import com.grack.nanojson.JsonObject;
+@@ -38,7 +39,6 @@ import org.schabi.newpipe.extractor.utils.Parser;
+ import org.schabi.newpipe.extractor.utils.Utils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.stream.Collectors;
+@@ -112,7 +112,7 @@ public class YoutubeMusicSearchExtractor extends SearchExtractor {
+                 .end()
+                 .value("query", getSearchString())
+                 .value("params", params)
+-            .end().done().getBytes(StandardCharsets.UTF_8);
++            .end().done().getBytes(UTF_8);
+         // @formatter:on
+ 
+         final String responseBody = getValidJsonResponseBody(
+@@ -240,7 +240,7 @@ public class YoutubeMusicSearchExtractor extends SearchExtractor {
+                         .value("enableSafetyMode", false)
+                     .end()
+                 .end()
+-            .end().done().getBytes(StandardCharsets.UTF_8);
++            .end().done().getBytes(UTF_8);
+         // @formatter:on
+ 
+         final String responseBody = getValidJsonResponseBody(
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java
+index 06f055f14b4f0e9f1d3cc8bea7a9e3588bbbcaa7..9c5521f5c11e379451c7a52faf55387f985f9346 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java
+@@ -32,7 +32,6 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItemsCollector;
+ import org.schabi.newpipe.extractor.utils.Utils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ 
+ import javax.annotation.Nonnull;
+ import javax.annotation.Nullable;
+@@ -66,7 +65,7 @@ public class YoutubePlaylistExtractor extends PlaylistExtractor {
+                         .value("browseId", "VL" + getId())
+                         .value("params", "wgYCCAA%3D") // Show unavailable videos
+                         .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+ 
+         browseResponse = getJsonPostResponse("browse", body, localization);
+         YoutubeParsingHelper.defaultAlertsCheck(browseResponse);
+@@ -387,7 +386,7 @@ public class YoutubePlaylistExtractor extends PlaylistExtractor {
+                             getExtractorLocalization(), getExtractorContentCountry())
+                             .value("continuation", continuation)
+                             .done())
+-                    .getBytes(StandardCharsets.UTF_8);
++                    .getBytes(Utils.UTF_8);
+ 
+             return new Page(YOUTUBEI_V1_URL + "browse?key=" + getKey()
+                     + DISABLE_PRETTY_PRINT_PARAMETER, body);
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSearchExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSearchExtractor.java
+index 7d374e9e6c5ce24fb45bdacbe7158f024623ffc9..92ebfab37dcea8619cf634eb9e18f23e382e2c52 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSearchExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSearchExtractor.java
+@@ -8,6 +8,7 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
+ import static org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory.getSearchParameter;
+ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import com.grack.nanojson.JsonArray;
+ import com.grack.nanojson.JsonBuilder;
+@@ -30,7 +31,6 @@ import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper;
+ import org.schabi.newpipe.extractor.utils.JsonUtils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.List;
+ 
+ import javax.annotation.Nonnull;
+@@ -87,7 +87,7 @@ public class YoutubeSearchExtractor extends SearchExtractor {
+             jsonBody.value("params", params);
+         }
+ 
+-        final byte[] body = JsonWriter.string(jsonBody.done()).getBytes(StandardCharsets.UTF_8);
++        final byte[] body = JsonWriter.string(jsonBody.done()).getBytes(UTF_8);
+ 
+         initialData = getJsonPostResponse("search", body, localization);
+     }
+@@ -190,7 +190,7 @@ public class YoutubeSearchExtractor extends SearchExtractor {
+                 getExtractorContentCountry())
+                 .value("continuation", page.getId())
+                 .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(UTF_8);
+         // @formatter:on
+ 
+         final JsonObject ajaxJson = getJsonPostResponse("search", json, localization);
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java
+index 28f2b7b911531864688964d41d61b10b7b7afe56..491a9e6309defa5b3524e11a851245874b2a624c 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java
+@@ -88,7 +88,6 @@ import org.schabi.newpipe.extractor.utils.Parser;
+ import org.schabi.newpipe.extractor.utils.Utils;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.time.LocalDate;
+ import java.time.OffsetDateTime;
+ import java.time.format.DateTimeFormatter;
+@@ -878,7 +877,7 @@ public class YoutubeStreamExtractor extends StreamExtractor {
+                         .value(CONTENT_CHECK_OK, true)
+                         .value(RACY_CHECK_OK, true)
+                         .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+         nextResponse = getJsonPostResponse(NEXT, body, localization);
+ 
+         // streamType can only have LIVE_STREAM, POST_LIVE_STREAM and VIDEO_STREAM values (see
+@@ -985,7 +984,7 @@ public class YoutubeStreamExtractor extends StreamExtractor {
+                         // using some parameters for Android client requests
+                         .value("params", "CgIQBg")
+                         .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+ 
+         final JsonObject androidPlayerResponse = getJsonAndroidPostResponse(PLAYER,
+                 mobileBody, localization, "&t=" + generateTParameter()
+@@ -1020,7 +1019,7 @@ public class YoutubeStreamExtractor extends StreamExtractor {
+                         .value(CONTENT_CHECK_OK, true)
+                         .value(RACY_CHECK_OK, true)
+                         .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(Utils.UTF_8);
+ 
+         final JsonObject iosPlayerResponse = getJsonIosPostResponse(PLAYER,
+                 mobileBody, localization, "&t=" + generateTParameter()
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java
+index 13996817e0457c95dc68fe72db89a3f13659ee2f..40c22201c01aa9681017543d92b2ae44c8378ca6 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java
+@@ -24,6 +24,7 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getTextAtKey;
+ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
+ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
++import static org.schabi.newpipe.extractor.utils.Utils.UTF_8;
+ 
+ import com.grack.nanojson.JsonObject;
+ import com.grack.nanojson.JsonWriter;
+@@ -40,7 +41,6 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+ import org.schabi.newpipe.extractor.stream.StreamInfoItemsCollector;
+ 
+ import java.io.IOException;
+-import java.nio.charset.StandardCharsets;
+ import java.util.stream.Stream;
+ 
+ import javax.annotation.Nonnull;
+@@ -65,7 +65,7 @@ public class YoutubeTrendingExtractor extends KioskExtractor<StreamInfoItem> {
+                 .value("browseId", "FEtrending")
+                 .value("params", VIDEOS_TAB_PARAMS)
+                 .done())
+-                .getBytes(StandardCharsets.UTF_8);
++                .getBytes(UTF_8);
+         // @formatter:on
+ 
+         initialData = getJsonPostResponse("browse", body, getExtractorLocalization());
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java b/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java
+index 320a4996aa82c547f9ef6847738a8404e48eb975..39ffc67573457707a079259c20f7980ac52f6be6 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java
+@@ -7,7 +7,6 @@ import java.net.MalformedURLException;
+ import java.net.URL;
+ import java.net.URLDecoder;
+ import java.net.URLEncoder;
+-import java.nio.charset.StandardCharsets;
+ import java.util.Arrays;
+ import java.util.Collection;
+ import java.util.Map;
+@@ -21,6 +20,7 @@ import javax.annotation.Nullable;
+ public final class Utils {
+     public static final String HTTP = "http://";
+     public static final String HTTPS = "https://";
++    public static final String UTF_8 = "UTF-8";
+     private static final Pattern M_PATTERN = Pattern.compile("(https?)?://m\\.");
+     private static final Pattern WWW_PATTERN = Pattern.compile("(https?)?://www\\.");
+ 
+@@ -37,7 +37,7 @@ public final class Utils {
+      */
+     public static String encodeUrlUtf8(final String string) throws UnsupportedEncodingException {
+         // TODO: Switch to URLEncoder.encode(String, Charset) in Java 10.
+-        return URLEncoder.encode(string, StandardCharsets.UTF_8.name());
++        return URLEncoder.encode(string, UTF_8);
+     }
+ 
+     /**
+@@ -48,7 +48,7 @@ public final class Utils {
+      */
+     public static String decodeUrlUtf8(final String url) throws UnsupportedEncodingException {
+         // TODO: Switch to URLDecoder.decode(String, Charset) in Java 10.
+-        return URLDecoder.decode(url, StandardCharsets.UTF_8.name());
++        return URLDecoder.decode(url, UTF_8);
+     }
+ 
+     /**

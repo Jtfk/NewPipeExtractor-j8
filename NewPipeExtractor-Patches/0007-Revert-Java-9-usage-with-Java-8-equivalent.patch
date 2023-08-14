@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Tue, 15 Aug 2023 00:12:34 +0800
+Subject: [PATCH] Revert Java 9+ usage with Java 8 equivalent
+
+
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/ServiceList.java b/extractor/src/main/java/org/schabi/newpipe/extractor/ServiceList.java
+index 24f1a95fcfa0c7fd436a4152e134f884475e7a2b..03d8e85966a89dc09c873103e50dacbb821389e2 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/ServiceList.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/ServiceList.java
+@@ -45,7 +45,7 @@ public final class ServiceList {
+      * When creating a new service, put this service in the end of this list,
+      * and give it the next free id.
+      */
+-    private static final List<StreamingService> SERVICES = List.of(
++    private static final List<StreamingService> SERVICES = java.util.Arrays.asList(
+             YouTube, SoundCloud, MediaCCC, PeerTube, Bandcamp);
+ 
+     /**
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java
+index ef589dc66b038a6d1c3cccf70cb5227363b58a4a..44e78c654852ca04434a3a28954ae15b68ed9461 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/bandcamp/extractors/BandcampCommentsExtractor.java
+@@ -67,7 +67,7 @@ public class BandcampCommentsExtractor extends CommentsExtractor {
+ 
+         final String trackId = getTrackId();
+         final String token = getNextPageToken(reviews);
+-        return new InfoItemsPage<>(collector, new Page(List.of(trackId, token)));
++        return new InfoItemsPage<>(collector, new Page(java.util.Arrays.asList(trackId, token)));
+     }
+ 
+     @Override
+@@ -92,7 +92,7 @@ public class BandcampCommentsExtractor extends CommentsExtractor {
+         }
+ 
+         return new InfoItemsPage<>(collector,
+-                new Page(List.of(trackId, getNextPageToken(reviews))));
++                new Page(java.util.Arrays.asList(trackId, getNextPageToken(reviews))));
+     }
+ 
+     private JsonObject fetchReviewsData(final String trackId, final String token)
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSuggestionExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSuggestionExtractor.java
+index 3fa9472c79f148aa7a151fa05dcd1d4edc79660f..ed64251d17abbf476152ba9adfb90a9de4ce1400 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSuggestionExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeSuggestionExtractor.java
+@@ -86,7 +86,7 @@ public class YoutubeSuggestionExtractor extends SuggestionExtractor {
+                     .map(JsonArray.class::cast)
+                     .map(suggestion -> suggestion.getString(0)) // 0 is the search suggestion
+                     .filter(suggestion -> !isBlank(suggestion)) // Filter blank suggestions
+-                    .collect(Collectors.toUnmodifiableList());
++                    .collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
+         } catch (final JsonParserException e) {
+             throw new ParsingException("Could not parse JSON response", e);
+         }
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java
+index 40c22201c01aa9681017543d92b2ae44c8378ca6..fbcbafdb9a3a2dd360654d4f1f7a59d6611728e3 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeTrendingExtractor.java
+@@ -134,7 +134,7 @@ public class YoutubeTrendingExtractor extends KioskExtractor<StreamInfoItem> {
+             final Stream<JsonObject> items;
+             if (isVideoTab) {
+                 // The first shelf of the Videos tab contains the normal trends
+-                items = shelves.findFirst().stream();
++                items = shelves.findFirst().isPresent() ? Stream.of(shelves.findFirst().get()) : Stream.empty();
+             } else {
+                 // Filter Trending shorts and Recently trending sections which have a title,
+                 // contrary to normal trends
+diff --git a/extractor/src/test/java/org/schabi/newpipe/extractor/services/bandcamp/BandcampPaidStreamExtractorTest.java b/extractor/src/test/java/org/schabi/newpipe/extractor/services/bandcamp/BandcampPaidStreamExtractorTest.java
+index 88eca9fdd9c6e26ac72ca6b796152ba8103a2070..0f32ef70eb16fc384b73ef76dfad6451d9fe8b0d 100644
+--- a/extractor/src/test/java/org/schabi/newpipe/extractor/services/bandcamp/BandcampPaidStreamExtractorTest.java
++++ b/extractor/src/test/java/org/schabi/newpipe/extractor/services/bandcamp/BandcampPaidStreamExtractorTest.java
+@@ -9,6 +9,7 @@ import org.schabi.newpipe.downloader.DownloaderTestImpl;
+ import org.schabi.newpipe.extractor.NewPipe;
+ import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+ import org.schabi.newpipe.extractor.exceptions.PaidContentException;
++import org.schabi.newpipe.extractor.stream.StreamExtractor;
+ 
+ public class BandcampPaidStreamExtractorTest {
+ 
+@@ -19,7 +20,7 @@ public class BandcampPaidStreamExtractorTest {
+ 
+     @Test
+     public void testPaidTrack() throws ExtractionException {
+-        final var extractor = Bandcamp.getStreamExtractor("https://radicaldreamland.bandcamp.com/track/hackmud-continuous-mix");
++        final StreamExtractor extractor = Bandcamp.getStreamExtractor("https://radicaldreamland.bandcamp.com/track/hackmud-continuous-mix");
+         assertThrows(PaidContentException.class, extractor::fetchPage);
+     }
+ }
+diff --git a/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/stream/YoutubeStreamExtractorDefaultTest.java b/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/stream/YoutubeStreamExtractorDefaultTest.java
+index fff75450c9c5af069e59880a74a9602abba4399d..22bc60c7b6e1073fd783143fc2bb60665930f453 100644
+--- a/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/stream/YoutubeStreamExtractorDefaultTest.java
++++ b/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/stream/YoutubeStreamExtractorDefaultTest.java
+@@ -418,9 +418,9 @@ public class YoutubeStreamExtractorDefaultTest {
+                     "",
+                     new Description("Arte is a French/German public broadcast service.",
+                             Description.PLAIN_TEXT),
+-                    List.of(new URL(
++                    java.util.Collections.singletonList(new URL(
+                             "https://en.wikipedia.org/wiki/Arte?wprov=yicw1")),
+-                    List.of("Wikipedia")
++                    java.util.Collections.singletonList("Wikipedia")
+             ));
+         }
+         @Override public boolean expectedUploaderVerified() { return true; }

@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Mon, 14 Aug 2023 23:47:04 +0800
+Subject: [PATCH] Setup build for Java 8
+
+
+diff --git a/build.gradle b/build.gradle
+index 186bf08ed0f90433052a5cc6c7a29b5cc75b35a1..0c75323d96d4ec5f490a4b8efef780c7eb056935 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -5,8 +5,8 @@ allprojects {
+     compileJava.options.encoding = 'UTF-8'
+     compileTestJava.options.encoding = 'UTF-8'
+ 
+-    sourceCompatibility = JavaVersion.VERSION_11
+-    targetCompatibility = JavaVersion.VERSION_11
++    sourceCompatibility = JavaVersion.VERSION_1_8
++    targetCompatibility = JavaVersion.VERSION_1_8
+ 
+     version 'v0.22.7'
+     group 'com.github.TeamNewPipe'
+@@ -56,6 +56,8 @@ subprojects {
+     artifacts {
+         archives sourcesJar
+     }
++
++    java.withSourcesJar() // Patch - fix sources not published
+ }
+ 
+ // https://discuss.gradle.org/t/best-approach-gradle-multi-module-project-generate-just-one-global-javadoc/18657/21
+diff --git a/checkstyle/checkstyle.xml b/checkstyle/checkstyle.xml
+index 454595bb4c6cdcdbf1a98fb0597952bc9a910c7f..ca9073b105997731a28820bcd07c3c4666af2f53 100644
+--- a/checkstyle/checkstyle.xml
++++ b/checkstyle/checkstyle.xml
+@@ -36,7 +36,7 @@
+     <!-- See https://checkstyle.org/config_sizes.html -->
+     <module name="FileLength"/>
+     <module name="LineLength">
+-      <property name="max" value="100"/>
++      <property name="max" value="140"/>
+       <property name="fileExtensions" value="java"/>
+     </module>
+ 

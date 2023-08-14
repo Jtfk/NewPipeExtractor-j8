@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Tue, 15 Aug 2023 00:13:28 +0800
+Subject: [PATCH] Remove chained "Optional.or" usage
+
+
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java
+index 27945c08d7fbd8e75e10c72afd4737d94c3d03d7..e07540af449554710eea547908b839b9a5547768 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelExtractor.java
+@@ -228,14 +228,19 @@ public class YoutubeChannelExtractor extends ChannelExtractor {
+     @Nonnull
+     @Override
+     public String getId() throws ParsingException {
+-        return getChannelHeader()
+-                .flatMap(header -> Optional.ofNullable(header.getString("channelId")).or(
+-                        () -> Optional.ofNullable(header.getObject("navigationEndpoint")
+-                                .getObject("browseEndpoint")
+-                                .getString("browseId"))
+-                ))
+-                .or(() -> Optional.ofNullable(redirectedChannelId))
+-                .orElseThrow(() -> new ParsingException("Could not get channel id"));
++        Optional<String> result = getChannelHeader()
++                .flatMap(header -> {
++                    String id = header.getString("channelId");
++                    if (isNullOrEmpty(id)) {
++                        id = header.getObject("navigationEndpoint")
++                                .getObject("browseEndpoint").getString("browseId");
++                    }
++                    return Optional.ofNullable(id);
++                });
++        if (!result.isPresent()) {
++            result = Optional.ofNullable(redirectedChannelId);
++        }
++        return result.orElseThrow(() -> new ParsingException("Could not get channel id"));
+     }
+ 
+     @Nonnull

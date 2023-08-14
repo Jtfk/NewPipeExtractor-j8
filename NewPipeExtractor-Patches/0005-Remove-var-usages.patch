@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Mon, 14 Aug 2023 23:55:59 +0800
+Subject: [PATCH] Remove var usages
+
+
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java
+index 804b23802d6a0382c84206e2028f3913518f429d..7bbaef2570410448f29f897ea3c5896a639a3258 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/extractors/PeertubeCommentsInfoItemExtractor.java
+@@ -84,10 +84,10 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
+         final String htmlText = JsonUtils.getString(item, "text");
+         try {
+             final Document doc = Jsoup.parse(htmlText);
+-            final var text = doc.body().text();
++            final String text = doc.body().text();
+             return new Description(text, Description.PLAIN_TEXT);
+         } catch (final Exception e) {
+-            final var text = htmlText.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", "");
++            final String text = htmlText.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", "");
+             return new Description(text, Description.PLAIN_TEXT);
+         }
+     }
+diff --git a/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeMixPlaylistExtractorTest.java b/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeMixPlaylistExtractorTest.java
+index fc765bcdefae7f1c0825a439d8f790751cb9c3c6..3d35ebad5cf15b5b838d9ffad6167baf53e4dce9 100644
+--- a/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeMixPlaylistExtractorTest.java
++++ b/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeMixPlaylistExtractorTest.java
+@@ -38,7 +38,7 @@ import java.util.Set;
+ public class YoutubeMixPlaylistExtractorTest {
+ 
+     private static final String RESOURCE_PATH = DownloaderFactory.RESOURCE_PATH + "services/youtube/extractor/mix/";
+-    private static final Map<String, String> dummyCookie = Map.of(YoutubeMixPlaylistExtractor.COOKIE_NAME, "whatever");
++    private static final Map<String, String> dummyCookie = java.util.Collections.singletonMap(YoutubeMixPlaylistExtractor.COOKIE_NAME, "whatever");
+     private static YoutubeMixPlaylistExtractor extractor;
+ 
+     public static class Mix {

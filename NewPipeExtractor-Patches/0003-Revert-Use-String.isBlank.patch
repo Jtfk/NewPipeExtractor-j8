@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Mon, 14 Aug 2023 23:50:25 +0800
+Subject: [PATCH] Revert "Use String.isBlank()."
+
+Restore Java 8 compatibility
+This reverts commit 2bca56f0df06ac315e0cce5bd430019c5b876132.
+
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java b/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java
+index dd990c0ead17b74bde16b4a790cbaaf52652518c..320a4996aa82c547f9ef6847738a8404e48eb975 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/utils/Utils.java
+@@ -306,8 +306,23 @@ public final class Utils {
+         return map == null || map.isEmpty();
+     }
+ 
++    public static boolean isWhitespace(final int c) {
++        return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r';
++    }
++
+     public static boolean isBlank(final String string) {
+-        return string == null || string.isBlank();
++        if (isNullOrEmpty(string)) {
++            return true;
++        }
++
++        final int length = string.length();
++        for (int i = 0; i < length; i++) {
++            if (!isWhitespace(string.codePointAt(i))) {
++                return false;
++            }
++        }
++
++        return true;
+     }
+ 
+     @Nonnull

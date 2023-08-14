@@ -1,0 +1,305 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jtfk <Jtfk@users.noreply.github.com>
+Date: Mon, 14 Aug 2023 23:55:03 +0800
+Subject: [PATCH] Backport "Use immutable Map factory methods." to Java 8
+
+Partially revert 45636b0d00bd3a11c749bfae0fd45d09ab42d14c
+
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/linkHandler/PeertubeTrendingLinkHandlerFactory.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/linkHandler/PeertubeTrendingLinkHandlerFactory.java
+index bded13ff2b9c5ba5180451ae836e3e50be53ea87..e90293ae6dc61bc5d0a8ca143c5eef4e06f55374 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/linkHandler/PeertubeTrendingLinkHandlerFactory.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/peertube/linkHandler/PeertubeTrendingLinkHandlerFactory.java
+@@ -4,6 +4,8 @@ import org.schabi.newpipe.extractor.ServiceList;
+ import org.schabi.newpipe.extractor.exceptions.ParsingException;
+ import org.schabi.newpipe.extractor.linkhandler.ListLinkHandlerFactory;
+ 
++import java.util.Collections;
++import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+ 
+@@ -12,16 +14,27 @@ public final class PeertubeTrendingLinkHandlerFactory extends ListLinkHandlerFac
+     private static final PeertubeTrendingLinkHandlerFactory INSTANCE
+             = new PeertubeTrendingLinkHandlerFactory();
+ 
++    public static final Map<String, String> KIOSK_MAP;
++    public static final Map<String, String> REVERSE_KIOSK_MAP;
+     public static final String KIOSK_TRENDING = "Trending";
+     public static final String KIOSK_MOST_LIKED = "Most liked";
+     public static final String KIOSK_RECENT = "Recently added";
+     public static final String KIOSK_LOCAL = "Local";
+ 
+-    public static final Map<String, String> KIOSK_MAP = Map.of(
+-            KIOSK_TRENDING, "%s/api/v1/videos?sort=-trending",
+-            KIOSK_MOST_LIKED, "%s/api/v1/videos?sort=-likes",
+-            KIOSK_RECENT, "%s/api/v1/videos?sort=-publishedAt",
+-            KIOSK_LOCAL, "%s/api/v1/videos?sort=-publishedAt&filter=local");
++    static {
++        final Map<String, String> map = new HashMap<>();
++        map.put(KIOSK_TRENDING, "%s/api/v1/videos?sort=-trending");
++        map.put(KIOSK_MOST_LIKED, "%s/api/v1/videos?sort=-likes");
++        map.put(KIOSK_RECENT, "%s/api/v1/videos?sort=-publishedAt");
++        map.put(KIOSK_LOCAL, "%s/api/v1/videos?sort=-publishedAt&filter=local");
++        KIOSK_MAP = Collections.unmodifiableMap(map);
++
++        final Map<String, String> reverseMap = new HashMap<>();
++        for (final Map.Entry<String, String> entry : KIOSK_MAP.entrySet()) {
++            reverseMap.put(entry.getValue(), entry.getKey());
++        }
++        REVERSE_KIOSK_MAP = Collections.unmodifiableMap(reverseMap);
++    }
+ 
+     public static PeertubeTrendingLinkHandlerFactory getInstance() {
+         return INSTANCE;
+@@ -53,12 +66,10 @@ public final class PeertubeTrendingLinkHandlerFactory extends ListLinkHandlerFac
+             return KIOSK_RECENT;
+         } else if (cleanUrl.contains("/videos/local")) {
+             return KIOSK_LOCAL;
++        } else if (REVERSE_KIOSK_MAP.containsKey(cleanUrl)) {
++            return REVERSE_KIOSK_MAP.get(cleanUrl);
+         } else {
+-            return KIOSK_MAP.entrySet().stream()
+-                    .filter(entry -> cleanUrl.equals(entry.getValue()))
+-                    .findFirst()
+-                    .map(Map.Entry::getKey)
+-                    .orElseThrow(() -> new ParsingException("no id found for this url"));
++            throw new ParsingException("no id found for this url");
+         }
+     }
+ 
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/soundcloud/SoundcloudParsingHelper.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/soundcloud/SoundcloudParsingHelper.java
+index a0bd239df1a1eb92cb13a95cee45724773ad0bc5..57deb64a21e60bff43c511db5082f3765a3015a0 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/soundcloud/SoundcloudParsingHelper.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/soundcloud/SoundcloudParsingHelper.java
+@@ -64,7 +64,8 @@ public final class SoundcloudParsingHelper {
+         // The one containing the client id will likely be the last one
+         Collections.reverse(possibleScripts);
+ 
+-        final var headers = Map.of("Range", List.of("bytes=0-50000"));
++        final Map<String, List<String>> headers = Collections.singletonMap("Range",
++                Collections.singletonList("bytes=0-50000"));
+ 
+         for (final Element element : possibleScripts) {
+             final String srcUrl = element.attr("src");
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java
+index cb7c21bdc1c6d8a1240ec8a2fb0236c6fea91a34..3e69dae520d7d22eefce0b6047562559ed970ae0 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java
+@@ -61,6 +61,7 @@ import java.time.OffsetDateTime;
+ import java.time.ZoneOffset;
+ import java.time.format.DateTimeParseException;
+ import java.util.ArrayList;
++import java.util.Collections;
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Locale;
+@@ -245,8 +246,8 @@ public final class YoutubeParsingHelper {
+     private static final Pattern C_ANDROID_PATTERN = Pattern.compile("&c=ANDROID");
+     private static final Pattern C_IOS_PATTERN = Pattern.compile("&c=IOS");
+ 
+-    private static final Set<String> GOOGLE_URLS = Set.of("google.", "m.google.", "www.google.");
+-    private static final Set<String> INVIDIOUS_URLS = Set.of("invidio.us", "dev.invidio.us",
++    private static final Set<String> GOOGLE_URLS = buildSet("google.", "m.google.", "www.google.");
++    private static final Set<String> INVIDIOUS_URLS = buildSet("invidio.us", "dev.invidio.us",
+             "www.invidio.us", "redirect.invidious.io", "invidious.snopyta.org", "yewtu.be",
+             "tube.connect.cafe", "tubus.eduvid.org", "invidious.kavin.rocks", "invidious.site",
+             "invidious-us.kavin.rocks", "piped.kavin.rocks", "vid.mint.lgbt", "invidiou.site",
+@@ -254,9 +255,14 @@ public final class YoutubeParsingHelper {
+             "ytprivate.com", "invidious.namazso.eu", "invidious.silkky.cloud", "ytb.trom.tf",
+             "invidious.exonip.de", "inv.riverside.rocks", "invidious.blamefran.net", "y.com.cm",
+             "invidious.moomoo.me", "yt.cyberhost.uk");
+-    private static final Set<String> YOUTUBE_URLS = Set.of("youtube.com", "www.youtube.com",
++    private static final Set<String> YOUTUBE_URLS = buildSet("youtube.com", "www.youtube.com",
+             "m.youtube.com", "music.youtube.com");
+ 
++    // java 8 compact
++    private static Set<String> buildSet(final String... url) {
++        return Collections.unmodifiableSet(new java.util.HashSet<>(java.util.Arrays.asList(url)));
++    }
++
+     /**
+      * Determines how the consent cookie (that is required for YouTube) will be generated.
+      *
+@@ -557,7 +563,7 @@ public final class YoutubeParsingHelper {
+             .end().done().getBytes(StandardCharsets.UTF_8);
+         // @formatter:on
+ 
+-        final var headers = getClientHeaders("1", HARDCODED_CLIENT_VERSION);
++        final Map<String, List<String>> headers = getClientHeaders("1", HARDCODED_CLIENT_VERSION);
+ 
+         // This endpoint is fetched by the YouTube website to get the items of its main menu and is
+         // pretty lightweight (around 30kB)
+@@ -579,7 +585,7 @@ public final class YoutubeParsingHelper {
+             return;
+         }
+         final String url = "https://www.youtube.com/sw.js";
+-        final var headers = getOriginReferrerHeaders("https://www.youtube.com");
++        final Map<String, List<String>> headers = getOriginReferrerHeaders("https://www.youtube.com");
+         final String response = getDownloader().get(url, headers).responseBody();
+         try {
+             clientVersion = getStringResultFromRegexArray(response,
+@@ -798,7 +804,7 @@ public final class YoutubeParsingHelper {
+             .end().done().getBytes(StandardCharsets.UTF_8);
+         // @formatter:on
+ 
+-        final var headers = new HashMap<>(getOriginReferrerHeaders(YOUTUBE_MUSIC_URL));
++        final Map<String, List<String>> headers = new HashMap<>(getOriginReferrerHeaders(YOUTUBE_MUSIC_URL));
+         headers.putAll(getClientHeaders(HARDCODED_YOUTUBE_MUSIC_KEY[1],
+                 HARDCODED_YOUTUBE_MUSIC_KEY[2]));
+ 
+@@ -823,7 +829,7 @@ public final class YoutubeParsingHelper {
+ 
+         try {
+             final String url = "https://music.youtube.com/sw.js";
+-            final var headers = getOriginReferrerHeaders(YOUTUBE_MUSIC_URL);
++            final Map<String, List<String>> headers = getOriginReferrerHeaders("https://music.youtube.com");
+             final String response = getDownloader().get(url, headers).responseBody();
+             musicClientVersion = getStringResultFromRegexArray(response,
+                     INNERTUBE_CONTEXT_CLIENT_VERSION_REGEXES, 1);
+@@ -1181,7 +1187,7 @@ public final class YoutubeParsingHelper {
+                                                  final byte[] body,
+                                                  final Localization localization)
+             throws IOException, ExtractionException {
+-        final var headers = getYouTubeHeaders();
++        final Map<String, List<String>> headers = getYouTubeHeaders();
+ 
+         return JsonUtils.toJsonObject(getValidJsonResponseBody(
+                 getDownloader().postWithContentTypeJson(YOUTUBEI_V1_URL + endpoint + "?key="
+@@ -1213,8 +1219,9 @@ public final class YoutubeParsingHelper {
+             @Nonnull final String userAgent,
+             @Nonnull final String innerTubeApiKey,
+             @Nullable final String endPartOfUrlRequest) throws IOException, ExtractionException {
+-        final var headers = Map.of("User-Agent", List.of(userAgent),
+-                "X-Goog-Api-Format-Version", List.of("2"));
++        final Map<String, List<String>> headers = new HashMap<>();
++        headers.put("User-Agent", Collections.singletonList(userAgent));
++        headers.put("X-Goog-Api-Format-Version", Collections.singletonList("2"));
+ 
+         final String baseEndpointUrl = YOUTUBEI_V1_GAPIS_URL + endpoint + "?key=" + innerTubeApiKey
+                 + DISABLE_PRETTY_PRINT_PARAMETER;
+@@ -1431,7 +1438,7 @@ public final class YoutubeParsingHelper {
+      */
+     @Nonnull
+     public static Map<String, List<String>> getYoutubeMusicHeaders() {
+-        final var headers = new HashMap<>(getOriginReferrerHeaders(YOUTUBE_MUSIC_URL));
++        final HashMap<String, List<String>> headers = new HashMap<>(getOriginReferrerHeaders(YOUTUBE_MUSIC_URL));
+         headers.putAll(getClientHeaders(youtubeMusicKey[1], youtubeMusicKey[2]));
+         return headers;
+     }
+@@ -1442,8 +1449,8 @@ public final class YoutubeParsingHelper {
+      */
+     public static Map<String, List<String>> getYouTubeHeaders()
+             throws ExtractionException, IOException {
+-        final var headers = getClientInfoHeaders();
+-        headers.put("Cookie", List.of(generateConsentCookie()));
++        final Map<String, List<String>> headers = getClientInfoHeaders();
++        headers.put("Cookie", Collections.singletonList(generateConsentCookie()));
+         return headers;
+     }
+ 
+@@ -1453,7 +1460,7 @@ public final class YoutubeParsingHelper {
+      */
+     public static Map<String, List<String>> getClientInfoHeaders()
+             throws ExtractionException, IOException {
+-        final var headers = new HashMap<>(getOriginReferrerHeaders("https://www.youtube.com"));
++        final HashMap<String, List<String>> headers = new HashMap<>(getOriginReferrerHeaders("https://www.youtube.com"));
+         headers.putAll(getClientHeaders("1", getClientVersion()));
+         return headers;
+     }
+@@ -1465,8 +1472,11 @@ public final class YoutubeParsingHelper {
+      * @param url The URL to be set as the origin and referrer.
+      */
+     private static Map<String, List<String>> getOriginReferrerHeaders(@Nonnull final String url) {
+-        final var urlList = List.of(url);
+-        return Map.of("Origin", urlList, "Referer", urlList);
++        final List<String> urlList = Collections.singletonList(url);
++        final Map<String, List<String>> headers = new HashMap<>();
++        headers.put("Origin", urlList);
++        headers.put("Referer", urlList);
++        return headers;
+     }
+ 
+     /**
+@@ -1478,8 +1488,10 @@ public final class YoutubeParsingHelper {
+      */
+     private static Map<String, List<String>> getClientHeaders(@Nonnull final String name,
+                                                               @Nonnull final String version) {
+-        return Map.of("X-YouTube-Client-Name", List.of(name),
+-                "X-YouTube-Client-Version", List.of(version));
++        final Map<String, List<String>> headers = new HashMap<>();
++        headers.put("X-YouTube-Client-Name", Collections.singletonList(name));
++        headers.put("X-YouTube-Client-Version", Collections.singletonList(version));
++        return headers;
+     }
+ 
+     /**
+@@ -1487,7 +1499,7 @@ public final class YoutubeParsingHelper {
+      * @return A singleton map containing the header.
+      */
+     public static Map<String, List<String>> getCookieHeader() {
+-        return Map.of("Cookie", List.of(generateConsentCookie()));
++        return Collections.singletonMap("Cookie", Collections.singletonList(generateConsentCookie()));
+     }
+ 
+     @Nonnull
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java
+index 33fe3207caecba6ae08f4927e1e2491eda848b24..f042fde27e0ad316beee83c17c6644beaaca46d2 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java
+@@ -620,9 +620,9 @@ public final class YoutubeDashManifestCreatorsUtils {
+             }
+         } else if (isAndroidStreamingUrl || isIosStreamingUrl) {
+             try {
+-                final var headers = Map.of("User-Agent",
+-                        List.of(isAndroidStreamingUrl ? getAndroidUserAgent(null)
+-                                : getIosUserAgent(null)));
++                final Map<String, List<String>> headers = java.util.Collections.singletonMap(
++                        "User-Agent", java.util.Collections.singletonList(isAndroidStreamingUrl
++                                ? getAndroidUserAgent(null) : getIosUserAgent(null)));
+                 final byte[] emptyBody = "".getBytes(StandardCharsets.UTF_8);
+                 return downloader.post(baseStreamingUrl, headers, emptyBody);
+             } catch (final IOException | ExtractionException e) {
+@@ -742,7 +742,7 @@ public final class YoutubeDashManifestCreatorsUtils {
+             @Nonnull final String responseMimeTypeExpected)
+             throws CreationException {
+         try {
+-            final var headers = getClientInfoHeaders();
++            final Map<String, List<String>> headers = getClientInfoHeaders();
+ 
+             String responseMimeType = "";
+ 
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java
+index eefc10a94d26d645351b50ff513c2f92356cbe39..c2819eb0c3f2de34be50d70d505b5f71ce1e9e13 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeMixPlaylistExtractor.java
+@@ -90,7 +90,7 @@ public class YoutubeMixPlaylistExtractor extends PlaylistExtractor {
+         final byte[] body = JsonWriter.string(jsonBody.done()).getBytes(StandardCharsets.UTF_8);
+ 
+         // Cookie is required due to consent
+-        final var headers = getYouTubeHeaders();
++        final Map<String, List<String>> headers = getYouTubeHeaders();
+ 
+         final Response response = getDownloader().postWithContentTypeJson(
+                 YOUTUBEI_V1_URL + "next?key=" + getKey() + DISABLE_PRETTY_PRINT_PARAMETER,
+@@ -229,7 +229,7 @@ public class YoutubeMixPlaylistExtractor extends PlaylistExtractor {
+ 
+         final StreamInfoItemsCollector collector = new StreamInfoItemsCollector(getServiceId());
+         // Cookie is required due to consent
+-        final var headers = getYouTubeHeaders();
++        final Map<String, List<String>> headers = getYouTubeHeaders();
+ 
+         final Response response = getDownloader().postWithContentTypeJson(page.getUrl(), headers,
+                 page.getBody(), getExtractorLocalization());
+diff --git a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/linkHandler/YoutubeStreamLinkHandlerFactory.java b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/linkHandler/YoutubeStreamLinkHandlerFactory.java
+index 0872bbe2dd51007fabe0d755f54139a28c977621..6ae1e12f28e0e52abb595ccaa9e1111d30d1bf04 100644
+--- a/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/linkHandler/YoutubeStreamLinkHandlerFactory.java
++++ b/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/linkHandler/YoutubeStreamLinkHandlerFactory.java
+@@ -49,7 +49,7 @@ public final class YoutubeStreamLinkHandlerFactory extends LinkHandlerFactory {
+     private static final YoutubeStreamLinkHandlerFactory INSTANCE
+             = new YoutubeStreamLinkHandlerFactory();
+     private static final List<String> SUBPATHS
+-            = List.of("embed/", "live/", "shorts/", "watch/", "v/", "w/");
++            = java.util.Collections.unmodifiableList(java.util.Arrays.asList("embed/", "live/", "shorts/", "watch/", "v/", "w/"));
+ 
+     private YoutubeStreamLinkHandlerFactory() {
+     }
