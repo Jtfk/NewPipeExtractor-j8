@@ -1,0 +1,8 @@
+// https://docs.gradle.org/current/userguide/composite_builds.html#included_plugin_builds
+pluginManagement {
+    if (file("Patched-NewPipeExtractor").exists()) {
+        includeBuild("Patched-NewPipeExtractor") {
+            name = "Patched-NewPipeExtractor"
+        }
+    }
+}

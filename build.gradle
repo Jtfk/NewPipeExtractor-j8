@@ -1,0 +1,31 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url = 'https://files.minecraftforge.net/maven/'}
+    }
+    dependencies {
+        classpath 'net.minecraftforge:gitpatcher:0.10.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gitpatcher'
+
+patches {
+    submodule = 'NewPipeExtractor'
+    target = file('Patched-NewPipeExtractor')
+    patches = file('NewPipeExtractor-Patches')
+}
+
+tasks.register('setupAll') {
+    dependsOn 'applyPatches'
+}
+
+tasks.register('publishDeps') {
+    dependsOn gradle.includedBuilds*.task(':publishToMavenLocal')
+    dependsOn gradle.includedBuilds*.task(':extractor:publishToMavenLocal')
+    dependsOn gradle.includedBuilds*.task(':timeago-parser:publishToMavenLocal')
+}
+
+//group 'org.example'
+//version '1.0-SNAPSHOT'

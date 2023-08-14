@@ -1,0 +1,9 @@
+# Adapted from
+# https://github.com/CloudNetService/cloud-command-framework/blob/a9ab1f345bef16fa68fa4b473014bc69f4052730/jitpack.yml
+jdk:
+  - openjdk8
+before_install:
+  - git config --global user.email "jitpack@build-env.com" && git config --global user.name "Jitpack Build"
+install:
+  - git submodule deinit -f NewPipeExtractor && git submodule init && ./gradlew updateSubmodules applyPatches
+  - cd Patched-NewPipeExtractor && ./gradlew publishToMavenLocal
