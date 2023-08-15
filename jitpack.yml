@@ -6,4 +6,4 @@ before_install:
   - git config --global user.email "jitpack@build-env.com" && git config --global user.name "Jitpack Build"
 install:
   - git submodule deinit -f NewPipeExtractor && git submodule init && ./gradlew updateSubmodules applyPatches
-  - cd Patched-NewPipeExtractor && ./gradlew publishToMavenLocal
+  - cd Patched-NewPipeExtractor && ./gradlew clean -Pgroup="$GROUP" -Pversion="$VERSION" -xtest assemble publishToMavenLocal
